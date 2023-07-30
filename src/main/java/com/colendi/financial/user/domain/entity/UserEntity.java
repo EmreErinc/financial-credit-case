@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(schema = "public", name = "user")
@@ -11,6 +13,8 @@ import java.sql.Timestamp;
 @Setter
 @ToString
 @RequiredArgsConstructor
+@Builder
+@AllArgsConstructor
 public class UserEntity {
 
   @Id
@@ -23,8 +27,9 @@ public class UserEntity {
   @Column(name = "last_name")
   String lastName;
 
+  @Builder.Default
   @Column(name = "created_at")
-  Timestamp createdAt;
+  Timestamp createdAt = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));
 
   @Column(name = "updated_at")
   Timestamp updatedAt;

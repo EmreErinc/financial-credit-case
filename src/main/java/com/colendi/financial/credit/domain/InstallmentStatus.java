@@ -1,16 +1,14 @@
 package com.colendi.financial.credit.domain;
 
-public enum CreditStatus {
+public enum InstallmentStatus {
 
-  REQUESTED("Requested"),
   PENDING("Pending"),
-  APPROVED("Approved"),
-  REJECTED("Rejected"),
-  COMPLETED("Completed");
+  PAID("Paid"),
+  OVERDUE("Overdue");
 
   private final String name;
 
-  CreditStatus(String name) {
+  InstallmentStatus(String name) {
     this.name = name;
   }
 
