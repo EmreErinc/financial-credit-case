@@ -3,9 +3,12 @@ package com.colendi.financial.commons;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor(force = true)
 public class DoneResponse {
 
   Boolean done;
