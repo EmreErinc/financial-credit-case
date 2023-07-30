@@ -1,4 +1,4 @@
-package com.colendi.financial.commons;
+package com.colendi.financial.commons.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

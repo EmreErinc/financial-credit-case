@@ -1,6 +1,6 @@
 package com.colendi.financial.credit.api;
 
-import com.colendi.financial.commons.DoneResponse;
+import com.colendi.financial.commons.model.DoneResponse;
 import com.colendi.financial.credit.CreditService;
 import com.colendi.financial.credit.api.model.request.LoanCreditRequest;
 import com.colendi.financial.credit.api.model.request.PayInstallmentRequest;

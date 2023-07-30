@@ -22,4 +22,10 @@ docker-compose build
 docker-compose up -d
 ```
 
+## Stop Project
+
+```bash
+docker-compose down
+```
+
 #### [Get Postman Collection](./Colendi%20-%20Financial%20Case%20Study.postman_collection.json)

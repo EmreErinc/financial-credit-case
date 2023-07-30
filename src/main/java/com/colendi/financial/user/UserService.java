@@ -1,6 +1,6 @@
 package com.colendi.financial.user;
 
-import com.colendi.financial.commons.DoneResponse;
+import com.colendi.financial.commons.model.DoneResponse;
 import com.colendi.financial.user.api.model.request.CreateUserRequest;
 import com.colendi.financial.user.api.model.response.UserDetailResponse;
 import com.colendi.financial.user.api.model.response.UserListResponse;

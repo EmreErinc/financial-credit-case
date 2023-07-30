@@ -1,6 +1,6 @@
 package com.colendi.financial.credit;
 
-import com.colendi.financial.commons.DoneResponse;
+import com.colendi.financial.commons.model.DoneResponse;
 import com.colendi.financial.credit.api.model.request.LoanCreditRequest;
 import com.colendi.financial.credit.api.model.request.PayInstallmentRequest;
 import com.colendi.financial.credit.api.model.request.UpdateCreditStatusRequest;
@@ -18,4 +18,6 @@ public interface CreditService {
   DoneResponse payInstallment(PayInstallmentRequest request);
 
   DoneResponse updateCreditStatus(long creditId, UpdateCreditStatusRequest request);
+
+  void calculateLatePaymentInterests();
 }

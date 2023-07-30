@@ -1,6 +1,5 @@
 package com.colendi.financial.credit.domain.entity;
 
-import com.colendi.financial.credit.domain.CreditStatus;
 import com.colendi.financial.credit.domain.InstallmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,6 +37,12 @@ public class InstallmentEntity {
 
   @Column(name = "paid_date")
   Timestamp paidDate;
+
+  @Column(name = "interest_amount")
+  BigDecimal interestAmount;
+
+  @Column(name = "interest_day_count")
+  int interestDayCount;
 
   @Builder.Default
   @Column(name = "created_at")

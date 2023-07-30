@@ -1,6 +1,6 @@
 package com.colendi.financial.credit.impl;
 
-import com.colendi.financial.commons.DoneResponse;
+import com.colendi.financial.commons.model.DoneResponse;
 import com.colendi.financial.credit.CreditService;
 import com.colendi.financial.credit.api.model.request.LoanCreditRequest;
 import com.colendi.financial.credit.api.model.request.PayInstallmentRequest;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Comparator;
@@ -32,6 +33,7 @@ import java.util.List;
 public class CreditServiceImpl implements CreditService {
 
   private static final int ONE_MONTH_AS_DAY = 30;
+  private static final double INTEREST_RATE = 2.32;
 
   private final CreditRepository creditRepository;
   private final InstallmentRepository installmentRepository;
@@ -77,6 +79,13 @@ public class CreditServiceImpl implements CreditService {
             .status(InstallmentStatus.PENDING)
             .build());
       }
+    } else {
+      installmentRepository.save(InstallmentEntity.builder()
+          .creditId(savedCreditEntity.getId())
+          .amount(request.getAmount())
+          .dueDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)))
+          .status(InstallmentStatus.PENDING)
+          .build());
     }
 
     return DoneResponse.success();
@@ -160,5 +169,24 @@ public class CreditServiceImpl implements CreditService {
     creditRepository.save(creditEntity);
 
     return DoneResponse.success();
+  }
+
+  @Override
+  public void calculateLatePaymentInterests() {
+    installmentRepository.findByDueDateIsAfterAndStatus(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)), InstallmentStatus.PENDING)
+        .forEach(installmentEntity -> {
+          BigDecimal overDueDays = BigDecimal.valueOf(Duration.between(installmentEntity.getDueDate().toLocalDateTime(), LocalDateTime.now(ZoneOffset.UTC)).toDays());
+          BigDecimal interestRateMultiplier = BigDecimal.valueOf(INTEREST_RATE).divide(BigDecimal.valueOf(100L));
+
+          BigDecimal latePaymentInterest = installmentEntity.getAmount()
+              .multiply(overDueDays)
+              .multiply(interestRateMultiplier)
+              .divide(BigDecimal.valueOf(360L));
+
+          installmentEntity.setInterestAmount(installmentEntity.getAmount().add(latePaymentInterest));
+          installmentEntity.setInterestDayCount(overDueDays.intValue());
+          installmentEntity.setStatus(InstallmentStatus.OVERDUE);
+          installmentRepository.save(installmentEntity);
+        });
   }
 }
