@@ -14,7 +14,7 @@ import com.colendi.financial.credit.domain.entity.InstallmentEntity;
 import com.colendi.financial.credit.domain.repository.CreditRepository;
 import com.colendi.financial.credit.domain.repository.InstallmentRepository;
 import com.colendi.financial.user.UserService;
-import com.colendi.financial.user.api.model.response.UserDetail;
+import com.colendi.financial.user.api.model.response.UserDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -26,8 +26,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +53,7 @@ public class CreditServiceImpl implements CreditService {
 
   @Override
   public DoneResponse loanCredit(LoanCreditRequest request) {
-    UserDetail requesterUser = userService.getUserDetail(request.getUserId()); // check user exists
+    UserDetailResponse requesterUser = userService.getUserDetail(request.getUserId()); // check user exists
 
     CreditEntity savedCreditEntity = creditRepository.save(CreditEntity.builder()
         .userId(request.getUserId())

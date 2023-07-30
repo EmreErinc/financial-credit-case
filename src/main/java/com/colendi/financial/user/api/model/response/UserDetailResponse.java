@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class UserDetail {
+public class UserDetailResponse {
 
   long userId;
   String firstName;
