@@ -51,6 +51,16 @@ public class CreditServiceImpl implements CreditService {
     return dueDate;
   }
 
+  private static void validateBeforePayment(CreditEntity creditEntity) {
+    if (CreditStatus.REQUESTED.equals(creditEntity.getStatus())) {
+      throw new RuntimeException("Credit not approved yet");
+    }
+
+    if (CreditStatus.REJECTED.equals(creditEntity.getStatus())) {
+      throw new RuntimeException("Credit is rejected. You can not pay installment");
+    }
+  }
+
   @Override
   public DoneResponse loanCredit(LoanCreditRequest request) {
     UserDetailResponse requesterUser = userService.getUserDetail(request.getUserId()); // check user exists
@@ -63,30 +73,38 @@ public class CreditServiceImpl implements CreditService {
         .build());
 
     if (request.getInstallmentCount() != 1) {
-      BigDecimal amountPerInstallment = request.getAmount().divide(BigDecimal.valueOf(request.getInstallmentCount()));
-
-      LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-
-      for (int i = 1; i <= request.getInstallmentCount(); i++) {
-        LocalDateTime dueDate = calculateDueDate(now, i);
-
-        installmentRepository.save(InstallmentEntity.builder()
-            .creditId(savedCreditEntity.getId())
-            .amount(amountPerInstallment)
-            .dueDate(Timestamp.from(dueDate.toInstant(ZoneOffset.UTC)))
-            .status(InstallmentStatus.PENDING)
-            .build());
-      }
+      persistInstallments(request, savedCreditEntity);
     } else {
-      installmentRepository.save(InstallmentEntity.builder()
-          .creditId(savedCreditEntity.getId())
-          .amount(request.getAmount())
-          .dueDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)))
-          .status(InstallmentStatus.PENDING)
-          .build());
+      persistSingleInstallment(request, savedCreditEntity);
     }
 
     return DoneResponse.success();
+  }
+
+  private void persistSingleInstallment(LoanCreditRequest request, CreditEntity savedCreditEntity) {
+    installmentRepository.save(InstallmentEntity.builder()
+        .creditId(savedCreditEntity.getId())
+        .amount(request.getAmount())
+        .dueDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)))
+        .status(InstallmentStatus.PENDING)
+        .build());
+  }
+
+  private void persistInstallments(LoanCreditRequest request, CreditEntity savedCreditEntity) {
+    BigDecimal amountPerInstallment = request.getAmount().divide(BigDecimal.valueOf(request.getInstallmentCount()));
+
+    LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+
+    for (int i = 1; i <= request.getInstallmentCount(); i++) {
+      LocalDateTime dueDate = calculateDueDate(now, i);
+
+      installmentRepository.save(InstallmentEntity.builder()
+          .creditId(savedCreditEntity.getId())
+          .amount(amountPerInstallment)
+          .dueDate(Timestamp.from(dueDate.toInstant(ZoneOffset.UTC)))
+          .status(InstallmentStatus.PENDING)
+          .build());
+    }
   }
 
   @Override
@@ -145,31 +163,74 @@ public class CreditServiceImpl implements CreditService {
     CreditEntity creditEntity = creditRepository.findById(installmentEntity.getCreditId())
         .orElseThrow(() -> new RuntimeException("Credit not found"));
 
-    if (CreditStatus.REQUESTED.equals(creditEntity.getStatus())) {
-      throw new RuntimeException("Credit not approved yet");
+    validateBeforePayment(creditEntity);
+
+    switch (installmentEntity.getStatus()) {
+      case PENDING -> handlePendingStatus(request, installmentEntity);
+      case PARTIALLY_PAID -> handlePartiallyPaidStatus(request, installmentEntity);
+      case OVERDUE -> handleOverdueStatus(request, installmentEntity);
+      default -> throw new RuntimeException("Installment is already paid");
     }
 
-    if (CreditStatus.REJECTED.equals(creditEntity.getStatus())) {
-      throw new RuntimeException("Credit is rejected. You can not pay installment");
+    checkCreditCompleteness(installmentEntity, creditEntity);
+
+    return DoneResponse.success();
+  }
+
+  private void handleOverdueStatus(PayInstallmentRequest request, InstallmentEntity installmentEntity) {
+    if (installmentEntity.getAmount().add(installmentEntity.getInterestAmount()).equals(request.getAmount())) {
+      installmentEntity.setStatus(InstallmentStatus.PAID);
+    } else if (installmentEntity.getAmount().add(installmentEntity.getInterestAmount()).compareTo(request.getAmount()) > 0) {
+      installmentEntity.setStatus(InstallmentStatus.PARTIALLY_PAID);
+    } else {
+      throw new RuntimeException("Paid amount can not be greater than installment amount");
     }
 
-    // todo partial payment may be implemented
+    installmentEntity.setPaidAmount(request.getAmount());
+    installmentEntity.setPaidDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
 
+    installmentRepository.save(installmentEntity);
+  }
+
+  private void handlePartiallyPaidStatus(PayInstallmentRequest request, InstallmentEntity installmentEntity) {
+    BigDecimal paidAmount = installmentEntity.getPaidAmount().add(request.getAmount());
+
+    if (installmentEntity.getAmount().equals(paidAmount)) {
+      installmentEntity.setStatus(InstallmentStatus.PAID);
+    } else if (installmentEntity.getAmount().compareTo(paidAmount) > 0) {
+      installmentEntity.setStatus(InstallmentStatus.PARTIALLY_PAID);
+    } else {
+      throw new RuntimeException("Paid amount can not be greater than installment amount");
+    }
+
+    installmentEntity.setPaidAmount(paidAmount);
+    installmentEntity.setPaidDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
+
+    installmentRepository.save(installmentEntity);
+  }
+
+  private void handlePendingStatus(PayInstallmentRequest request, InstallmentEntity installmentEntity) {
     if (installmentEntity.getAmount().equals(request.getAmount())) {
       installmentEntity.setStatus(InstallmentStatus.PAID);
-      installmentEntity.setPaidDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
-
-      installmentRepository.save(installmentEntity);
+    } else if (installmentEntity.getAmount().compareTo(request.getAmount()) > 0) {
+      installmentEntity.setStatus(InstallmentStatus.PARTIALLY_PAID);
+    } else {
+      throw new RuntimeException("Paid amount can not be greater than installment amount");
     }
 
+    installmentEntity.setPaidAmount(request.getAmount());
+    installmentEntity.setPaidDate(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
+
+    installmentRepository.save(installmentEntity);
+  }
+
+  private void checkCreditCompleteness(InstallmentEntity installmentEntity, CreditEntity creditEntity) {
     Long paidInstallmentCount = installmentRepository.countByCreditIdAndStatus(installmentEntity.getCreditId(), InstallmentStatus.PAID);
 
     if (paidInstallmentCount == creditEntity.getInstallmentCount()) {
       creditEntity.setStatus(CreditStatus.COMPLETED);
       creditRepository.save(creditEntity);
     }
-
-    return DoneResponse.success();
   }
 
   @Override

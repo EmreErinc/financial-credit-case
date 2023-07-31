@@ -44,6 +44,9 @@ public class InstallmentEntity {
   @Column(name = "interest_day_count")
   int interestDayCount;
 
+  @Column(name = "paid_amount")
+  BigDecimal paidAmount;
+
   @Builder.Default
   @Column(name = "created_at")
   Timestamp createdAt = Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC));

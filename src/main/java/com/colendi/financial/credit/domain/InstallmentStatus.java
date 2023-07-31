@@ -3,6 +3,7 @@ package com.colendi.financial.credit.domain;
 public enum InstallmentStatus {
 
   PENDING("Pending"),
+  PARTIALLY_PAID("Partially Paid"),
   PAID("Paid"),
   OVERDUE("Overdue");
 

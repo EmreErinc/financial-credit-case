@@ -17,4 +17,7 @@ public class InstallmentDetail {
   BigDecimal amount;
   InstallmentStatus status;
   LocalDate paidDate;
+  BigDecimal interestAmount;
+  int interestDayCount;
+  BigDecimal paidAmount;
 }

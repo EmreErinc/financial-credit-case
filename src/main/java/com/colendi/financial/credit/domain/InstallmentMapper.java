@@ -16,6 +16,9 @@ public class InstallmentMapper {
             .amount(installmentEntity.getAmount())
             .status(installmentEntity.getStatus())
             .paidDate(installmentEntity.getPaidDate() == null ? null : installmentEntity.getPaidDate().toLocalDateTime().toLocalDate())
+            .interestAmount(installmentEntity.getInterestAmount())
+            .interestDayCount(installmentEntity.getInterestDayCount())
+            .paidAmount(installmentEntity.getPaidAmount())
             .build();
   }
 }
