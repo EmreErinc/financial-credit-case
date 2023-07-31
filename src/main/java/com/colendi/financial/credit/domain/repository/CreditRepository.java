@@ -4,12 +4,10 @@ import com.colendi.financial.credit.domain.entity.CreditEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
 
-import java.util.List;
 import java.util.Optional;
 
-public interface CreditRepository extends CrudRepository<CreditEntity, Long> {
+public interface CreditRepository extends CrudRepository<CreditEntity, Long>, CustomCreditRepository {
 
   Optional<CreditEntity> findById(long creditId);
 

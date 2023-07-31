@@ -7,9 +7,12 @@ import com.colendi.financial.credit.api.model.request.PayInstallmentRequest;
 import com.colendi.financial.credit.api.model.request.UpdateCreditStatusRequest;
 import com.colendi.financial.credit.api.model.response.CreditDetailResponse;
 import com.colendi.financial.credit.api.model.response.CreditListResponse;
+import com.colendi.financial.credit.domain.CreditStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/v1/credits")
@@ -26,8 +29,10 @@ public class CreditController {
   @GetMapping("/by/{userId}")
   public ResponseEntity<CreditListResponse> getCreditList(@PathVariable long userId,
                                                           @RequestParam(required = false, defaultValue = "1") int page,
-                                                          @RequestParam(required = false, defaultValue = "10") int size) {
-    return ResponseEntity.ok(creditService.getCreditList(userId, page, size));
+                                                          @RequestParam(required = false, defaultValue = "10") int size,
+                                                          @RequestParam(required = false) CreditStatus status,
+                                                          @RequestParam(required = false) LocalDate createdAt) {
+    return ResponseEntity.ok(creditService.getCreditList(userId, page, size, status, createdAt));
   }
 
   @GetMapping("/{creditId}")

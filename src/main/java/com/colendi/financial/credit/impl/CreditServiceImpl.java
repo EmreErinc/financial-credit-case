@@ -16,17 +16,15 @@ import com.colendi.financial.credit.domain.repository.InstallmentRepository;
 import com.colendi.financial.user.UserService;
 import com.colendi.financial.user.api.model.response.UserDetailResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -112,8 +110,8 @@ public class CreditServiceImpl implements CreditService {
   }
 
   @Override
-  public CreditListResponse getCreditList(long userId, int page, int size) {
-    List<CreditResponse> creditList = creditRepository.findByUserId(userId, PageRequest.of(page - 1, size))
+  public CreditListResponse getCreditList(long userId, int page, int size, CreditStatus status, LocalDate createdAt) {
+    List<CreditResponse> creditList = creditRepository.findByUserId(userId, page, size, defineAvailableStatuses(status), defineCreatedAt(createdAt))
         .stream()
         .map(creditMapper.mapToCreditResponse())
         .toList();
@@ -121,6 +119,22 @@ public class CreditServiceImpl implements CreditService {
     return CreditListResponse.builder()
         .credits(creditList)
         .build();
+  }
+
+  private Set<CreditStatus> defineAvailableStatuses(CreditStatus status) {
+    Set<CreditStatus> desiredStatuses = new HashSet<>();
+
+    if (status != null) {
+      desiredStatuses.add(status);
+    } else {
+      desiredStatuses = Set.of(CreditStatus.values());
+    }
+
+    return desiredStatuses;
+  }
+
+  private Timestamp defineCreatedAt(LocalDate createdAt) {
+    return Timestamp.valueOf(LocalDateTime.of(createdAt == null ? LocalDate.MIN : createdAt, LocalTime.MIN));
   }
 
   @Override
@@ -139,7 +153,6 @@ public class CreditServiceImpl implements CreditService {
       throw new RuntimeException("Credit is rejected. You can not pay installment");
     }
 
-    // todo check installment user relation
     // todo partial payment may be implemented
 
     if (installmentEntity.getAmount().equals(request.getAmount())) {
